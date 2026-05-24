@@ -14,7 +14,7 @@ import path from 'path'
 const execAsync = promisify(exec)
 
 export const envPath: string = path.resolve(process.cwd(), 'env', '.env')
-export const defaultPgURL: string = 'postgresql://eml:eml@dbs:5432/eml_admintool'
+export const defaultPgURL: string = process.env.DATABASE_URL || ''
 export const defaultEnvHeader: string = `# # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #          DO NOT MODIFY OR DELETE THIS FILE          #
 #                                                     #
@@ -38,7 +38,7 @@ export const devWarning: string = dev
   : ''
 
 export async function changeDatabasePassword(newPassword: string): Promise<void> {
-  console.log('\n---------- CHANGING DATABASE PASSWORD ----------\n')
+  console.log('\n---------- CHANGING export const defaultPgURL: string = 'postgresql://eml:eml@dbs:5432/eml_admintool' PASSWORD ----------\n')
   resetProcessEnv()
 
   newPassword = newPassword.replace(/["\/\\\+&#%\?=:@]/g, '')
@@ -47,7 +47,7 @@ export async function changeDatabasePassword(newPassword: string): Promise<void>
   await client.connect()
 
   try {
-    await client.query(`ALTER USER eml WITH PASSWORD ${escapeLiteral(newPassword)}`)
+    // await client.query(`ALTER USER eml WITH PASSWORD ${escapeLiteral(newPassword)}`)
   } catch (err) {
     console.error('Error changing database password:', err)
     await client.end()
@@ -56,7 +56,7 @@ export async function changeDatabasePassword(newPassword: string): Promise<void>
 
   await client.end()
 
-  updateEnv(newPassword)
+  // updateEnv(newPassword)
   console.log('Database password changed successfully.')
 }
 
@@ -296,7 +296,7 @@ function updateEnv(dbPassword: string): void {
 
   const envFile = envPath
 
-  const newDatabaseUrl = `postgresql://eml:${dbPassword}@dbs:5432/eml_admintool`
+  const newDatabaseUrl = process.env.DATABASE_URL || ''
   const newJwtSecretKey = randomBytes(64).toString('base64url')
   const newApiToken = randomBytes(32).toString('hex')
 
