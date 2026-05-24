@@ -301,12 +301,10 @@ export function resetProcessEnv(): void {
 
 export async function restartUpdater(): Promise<void> {
   console.log('\n-------------- RESTARTING UPDATER --------------\n')
-  return
 }
 
 export async function restartServer(): Promise<void> {
   console.log('Restarting server...')
-  return
 }
 
 function updateEnv(): void {
