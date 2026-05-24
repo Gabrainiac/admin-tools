@@ -1,34 +1,26 @@
 {
   "name": "eml-admintool",
   "version": "2.3.3",
-  "engines": {
-    "node": "20.x"
-  }
   "author": "GoldFrite",
   "license": "GPL-3.0-or-later",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": "20.x"
-  },
+
   "scripts": {
     "dev": "vite dev --host",
     "build": "vite build --emptyOutDir",
     "preview": "vite preview",
-
-    "postinstall": "prisma generate"
-    
-    "start": "node .",
-    
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "start": "node build/index.js",
-    "serve": "node .",
+
+    "start": "node build",
     "postinstall": "prisma generate",
+
     "release": "node .github/release.js",
     "docker": "docker compose -f docker/docker-compose.dev.yml up",
     "docker-down": "docker compose -f docker/docker-compose.dev.yml down --rmi all -v"
   },
+
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.1",
     "@codemirror/commands": "^6.10.3",
@@ -40,8 +32,10 @@
     "@codemirror/search": "^6.6.0",
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.41.0",
+
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
+
     "bcrypt": "^6.0.0",
     "buffer": "^6.0.3",
     "chart.js": "^4.5.1",
@@ -62,10 +56,12 @@
     "semver": "^7.7.4",
     "zod": "^4.3.6"
   },
+
   "devDependencies": {
     "@sveltejs/adapter-node": "^5.5.4",
     "@sveltejs/kit": "^2.57.1",
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
+
     "@types/bcrypt": "^6.0.0",
     "@types/chart.js": "^2.9.41",
     "@types/luxon": "^3.7.1",
@@ -74,14 +70,18 @@
     "@types/node": "^25.6.0",
     "@types/pg": "^8.20.0",
     "@types/semver": "^7.7.1",
+
     "mime-types": "^3.0.2",
     "prettier": "^3.8.2",
     "prettier-plugin-svelte": "^3.5.1",
+
     "prisma": "^7.7.0",
+
     "sass": "^1.99.0",
     "svelte": "^5.55.4",
     "svelte-check": "^4.4.6",
     "svelte-preprocess": "^6.0.3",
+
     "typescript": "^5.9.2",
     "vite": "^8.0.8"
   }

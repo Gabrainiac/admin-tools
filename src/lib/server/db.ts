@@ -8,30 +8,26 @@ config()
 const { PrismaClient } = pkg
 
 const globalForPrisma = globalThis as unknown as {
-	prisma: InstanceType<typeof PrismaClient>
+  prisma: InstanceType<typeof PrismaClient>
 }
 
 const createPrismaClient = () => {
-	const connectionString = process.env.DATABASE_URL
+  const connectionString = process.env.DATABASE_URL
 
-	const pool = new Pool({
-		connectionString
-	})
+  const pool = new Pool({
+    connectionString
+  })
 
-	const adapter = new PrismaPg(pool)
+  const adapter = new PrismaPg(pool)
 
-	return new PrismaClient({
-		adapter
-	})
+  return new PrismaClient({
+    adapter
+  })
 }
 
 export const db =
-	globalForPrisma.prisma ?? createPrismaClient()
+  globalForPrisma.prisma ?? createPrismaClient()
 
 if (process.env.NODE_ENV !== 'production') {
-	globalForPrisma.prisma = db
-<<<<<<< HEAD
+  globalForPrisma.prisma = db
 }
-=======
-}
->>>>>>> 1267e8a5e648502bbc05d39d43c4014514318ae7
