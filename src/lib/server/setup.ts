@@ -362,32 +362,7 @@ export function resetProcessEnv(): void {
 
 export async function restartUpdater(): Promise<void> {
   console.log('\n-------------- RESTARTING UPDATER --------------\n')
-
-  try {
-    const response = await fetch('http://upd:4000/reload', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.UPDATER_HTTP_API_TOKEN}`
-      }
-    })
-
-    const data = await response.json()
-
-    if (!response.ok || !data.success) {
-      throw new Error(data.error)
-    }
-  } catch (err) {
-    console.error('Updater reload error:', err)
-
-    throw new ServerError(
-      'Failed to contact Updater',
-      err,
-      NotificationCode.INTERNAL_SERVER_ERROR,
-      500
-    )
-  }
-
-  console.log('Updater configuration reloaded successfully.')
+  return
 }
 
 export async function restartServer(): Promise<void> {
