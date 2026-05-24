@@ -14,7 +14,7 @@ import path from 'path'
 const execAsync = promisify(exec)
 
 export const envPath: string = path.resolve(process.cwd(), 'env', '.env')
-export const defaultPgURL: string = process.env.DATABASE_URL || ''
+export const defaultPgURL: string = process.env.DATABASE_URL ?? ''
 
 export const defaultEnvHeader: string = `# # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #          DO NOT MODIFY OR DELETE THIS FILE          #
@@ -356,17 +356,8 @@ BODY_SIZE_LIMIT=Infinity
 }
 
 export function resetProcessEnv(): void {
-  if (process.env.IS_CONFIGURED) delete process.env.IS_CONFIGURED
-  if (process.env.DATABASE_URL) delete process.env.DATABASE_URL
-  if (process.env.JWT_SECRET_KEY) delete process.env.JWT_SECRET_KEY
-  if (process.env.UPDATER_HTTP_API_TOKEN) {
-    delete process.env.UPDATER_HTTP_API_TOKEN
-  }
-
-  config({
-    path: envPath,
-    quiet: true
-  })
+  // Railway ya inyecta las variables automáticamente
+  // No cargar env/.env
 }
 
 export async function restartUpdater(): Promise<void> {
