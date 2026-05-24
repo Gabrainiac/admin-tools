@@ -30,4 +30,8 @@ export const db =
 
 if (process.env.NODE_ENV !== 'production') {
 	globalForPrisma.prisma = db
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 1267e8a5e648502bbc05d39d43c4014514318ae7
