@@ -1,6 +1,9 @@
 {
   "name": "eml-admintool",
   "version": "2.3.3",
+  "engines": {
+    "node": "20.x"
+  }
   "author": "GoldFrite",
   "license": "GPL-3.0-or-later",
   "private": true,
