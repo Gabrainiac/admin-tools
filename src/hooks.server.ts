@@ -251,7 +251,7 @@ async function handleUserSession(event: RequestEvent, session: string) {
 }
 
 function checkIsConfigured() {
-  return process.env.IS_CONFIGURED === 'true' && process.env.DATABASE_URL !== defaultPgURL && process.env.DATABASE_URL !== undefined
+  return process.env.IS_CONFIGURED === 'true'
 }
 
 function getDefaultEnv() {
