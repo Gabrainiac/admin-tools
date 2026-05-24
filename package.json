@@ -13,8 +13,13 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 
+
+
     "start": "node build",
     "postinstall": "prisma generate",
+
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate",
 
     "release": "node .github/release.js",
     "docker": "docker compose -f docker/docker-compose.dev.yml up",
