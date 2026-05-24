@@ -1,4 +1,4 @@
-import { Client, escapeLiteral } from 'pg'
+import { Client } from 'pg'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { config } from 'dotenv'
@@ -15,6 +15,7 @@ const execAsync = promisify(exec)
 
 export const envPath: string = path.resolve(process.cwd(), 'env', '.env')
 export const defaultPgURL: string = process.env.DATABASE_URL || ''
+
 export const defaultEnvHeader: string = `# # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #          DO NOT MODIFY OR DELETE THIS FILE          #
 #                                                     #
@@ -29,6 +30,7 @@ export const defaultEnvHeader: string = `# # # # # # # # # # # # # # # # # # # #
 # than modifying this file directly.                  #
 # Consult the documentation for more information.     #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #`
+
 export const devWarning: string = dev
   ? `
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -38,67 +40,96 @@ export const devWarning: string = dev
   : ''
 
 export async function changeDatabasePassword(newPassword: string): Promise<void> {
-  console.log('\n---------- CHANGING export const defaultPgURL: string = 'postgresql://eml:eml@dbs:5432/eml_admintool' PASSWORD ----------\n')
+  console.log('\n---------- CHANGING DATABASE PASSWORD ----------\n')
+
   resetProcessEnv()
 
   newPassword = newPassword.replace(/["\/\\\+&#%\?=:@]/g, '')
 
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL
+  })
+
   await client.connect()
 
   try {
-    // await client.query(`ALTER USER eml WITH PASSWORD ${escapeLiteral(newPassword)}`)
+    // Railway maneja usuarios/password automáticamente
+    // await client.query(`ALTER USER eml WITH PASSWORD '${newPassword}'`)
   } catch (err) {
     console.error('Error changing database password:', err)
     await client.end()
-    throw new ServerError('Failed to change database password', err, NotificationCode.DATABASE_ERROR, 500)
+
+    throw new ServerError(
+      'Failed to change database password',
+      err,
+      NotificationCode.DATABASE_ERROR,
+      500
+    )
   }
 
   await client.end()
 
-  // updateEnv(newPassword)
   console.log('Database password changed successfully.')
 }
 
 export async function initDatabase(): Promise<void> {
   console.log('\n------------ INITIALIZING DATABASE -------------\n')
+
   resetProcessEnv()
 
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL
+  })
+
   await client.connect()
 
-  let res
   try {
-    res = await client.query(`SELECT 1 FROM "pg_database" WHERE "datname" = $1`, ['eml_admintool'])
+    await execAsync('npx prisma db push')
   } catch (err) {
-    console.error('Error checking database existence:', err)
+    console.error('Error pushing prisma schema:', err)
+
     await client.end()
-    throw new ServerError('Database check failed', err, NotificationCode.DATABASE_ERROR, 500)
-  }
 
-  if (res.rowCount === 0) {
-    try {
-      await client.query(`CREATE DATABASE "eml_admintool"`)
-    } catch (err) {
-      console.error('Error creating database:', err)
-      await client.end()
-      throw new ServerError('Database creation failed', err, NotificationCode.DATABASE_ERROR, 500)
-    }
+    throw new ServerError(
+      'Database initialization failed',
+      err,
+      NotificationCode.DATABASE_ERROR,
+      500
+    )
   }
-
-  await execAsync('npx prisma db push')
 
   try {
-    res = await client.query(`SELECT 1 FROM "Environment" WHERE id = $1`, [1])
+    const res = await client.query(
+      `SELECT 1 FROM "Environment" WHERE id = $1`,
+      [1]
+    )
+
     if (res.rowCount === 0) {
-      await client.query(`INSERT INTO "Environment" ("id", "language", "name", "theme", "updatedAt") VALUES ($1, 'en', 'EML', 'default', NOW())`, [1])
+      await client.query(
+        `INSERT INTO "Environment"
+        ("id", "language", "name", "theme", "updatedAt")
+        VALUES ($1, 'en', 'EML', 'default', NOW())`,
+        [1]
+      )
     } else {
-      await client.query(`UPDATE "Environment" SET "updatedAt" = NOW() WHERE "id" = $1`, [1])
+      await client.query(
+        `UPDATE "Environment"
+         SET "updatedAt" = NOW()
+         WHERE "id" = $1`,
+        [1]
+      )
     }
   } catch (err) {
     console.error('Error initializing Environment table:', err)
+
     await client.end()
-    throw new ServerError('Failed to initialize Environment table', err, NotificationCode.DATABASE_ERROR, 500)
+
+    throw new ServerError(
+      'Failed to initialize Environment table',
+      err,
+      NotificationCode.DATABASE_ERROR,
+      500
+    )
   }
 
   await client.end()
@@ -106,27 +137,55 @@ export async function initDatabase(): Promise<void> {
   console.log('Database initialized successfully.')
 }
 
-export async function setAdminUser(username: string, password: string): Promise<void> {
+export async function setAdminUser(
+  username: string,
+  password: string
+): Promise<void> {
   console.log('\n------------- CREATING ADMIN USER --------------\n')
+
   resetProcessEnv()
 
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL
+  })
+
   await client.connect()
 
   const hashedPassword = await bcrypt.hash(password, 10)
 
   try {
     await client.query(
-      `INSERT INTO "User" 
-      ("id", "username", "password", "status", "isAdmin", "p_filesUpdater", "p_bootstraps", "p_maintenance", "p_news", "p_newsCategories", "p_newsTags", "p_backgrounds", "p_stats", "createdAt", "updatedAt")
-      VALUES (1, $1, $2, 'ACTIVE', true, 2, 1, 1, 2, 1, 1, 1, 2, NOW(), NOW()) ON CONFLICT DO NOTHING`,
+      `INSERT INTO "User"
+      ("id", "username", "password", "status", "isAdmin",
+      "p_filesUpdater", "p_bootstraps", "p_maintenance",
+      "p_news", "p_newsCategories", "p_newsTags",
+      "p_backgrounds", "p_stats", "createdAt", "updatedAt")
+      VALUES
+      (1, $1, $2, 'ACTIVE', true,
+      2, 1, 1,
+      2, 1, 1,
+      1, 2, NOW(), NOW())
+      ON CONFLICT DO NOTHING`,
       [username, hashedPassword]
     )
-    await client.query('UPDATE "Environment" SET "name" = $1, "updatedAt" = NOW() WHERE "id" = $2', [username, 1])
+
+    await client.query(
+      `UPDATE "Environment"
+       SET "name" = $1, "updatedAt" = NOW()
+       WHERE "id" = $2`,
+      [username, 1]
+    )
   } catch (err) {
     console.error('Error initializing admin user:', err)
+
     await client.end()
-    throw new ServerError('Failed to initialize admin user', err, NotificationCode.DATABASE_ERROR, 500)
+
+    throw new ServerError(
+      'Failed to initialize admin user',
+      err,
+      NotificationCode.DATABASE_ERROR,
+      500
+    )
   }
 
   await client.end()
@@ -136,19 +195,35 @@ export async function setAdminUser(username: string, password: string): Promise<
 
 export async function setPin(): Promise<void> {
   console.log('\n----------------- SETTING PIN ------------------\n')
+
   resetProcessEnv()
 
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL
+  })
+
   await client.connect()
 
   const pin = generateRandomPin()
 
   try {
-    await client.query(`UPDATE "Environment" SET "pin" = $1 WHERE "id" = $2`, [pin, 1])
+    await client.query(
+      `UPDATE "Environment"
+       SET "pin" = $1
+       WHERE "id" = $2`,
+      [pin, 1]
+    )
   } catch (err) {
     console.error('Error setting pin:', err)
+
     await client.end()
-    throw new ServerError('Failed to set pin', err, NotificationCode.DATABASE_ERROR, 500)
+
+    throw new ServerError(
+      'Failed to set pin',
+      err,
+      NotificationCode.DATABASE_ERROR,
+      500
+    )
   }
 
   await client.end()
@@ -158,29 +233,49 @@ export async function setPin(): Promise<void> {
 
 export async function setLanguage(language: string): Promise<void> {
   console.log('\n--------------- SETTING LANGUAGE ---------------\n')
+
   resetProcessEnv()
 
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL
+  })
+
   await client.connect()
 
   try {
-    await client.query(`UPDATE "Environment" SET "language" = $1 WHERE "id" = $2`, [language, 1])
+    await client.query(
+      `UPDATE "Environment"
+       SET "language" = $1
+       WHERE "id" = $2`,
+      [language, 1]
+    )
   } catch (err) {
     console.error('Error setting language:', err)
+
     await client.end()
-    throw new ServerError('Failed to set language', err, NotificationCode.DATABASE_ERROR, 500)
+
+    throw new ServerError(
+      'Failed to set language',
+      err,
+      NotificationCode.DATABASE_ERROR,
+      500
+    )
   }
 
   await client.end()
 
-  console.log('Language set successfully to:', language)
+  console.log('Language set successfully.')
 }
 
 export async function setDefaultProfile(name: string): Promise<void> {
-  console.log('\n------------ SETTING DEFAULT PROFIL ------------\n')
+  console.log('\n------------ SETTING DEFAULT PROFILE ------------\n')
+
   resetProcessEnv()
 
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL
+  })
+
   await client.connect()
 
   const slug = name
@@ -190,13 +285,23 @@ export async function setDefaultProfile(name: string): Promise<void> {
 
   try {
     await client.query(
-      `INSERT INTO "Profile" ("id", "name", "isDefault", "slug", "createdAt", "updatedAt") VALUES ($1, $2, true, $3, NOW(), NOW()) ON CONFLICT DO NOTHING`,
+      `INSERT INTO "Profile"
+      ("id", "name", "isDefault", "slug", "createdAt", "updatedAt")
+      VALUES ($1, $2, true, $3, NOW(), NOW())
+      ON CONFLICT DO NOTHING`,
       ['1', name, slug]
     )
   } catch (err) {
     console.error('Error setting default profile:', err)
+
     await client.end()
-    throw new ServerError('Failed to set default profile', err, NotificationCode.DATABASE_ERROR, 500)
+
+    throw new ServerError(
+      'Failed to set default profile',
+      err,
+      NotificationCode.DATABASE_ERROR,
+      500
+    )
   }
 
   await client.end()
@@ -206,24 +311,21 @@ export async function setDefaultProfile(name: string): Promise<void> {
 
 export async function markAsConfigured(): Promise<void> {
   console.log('\n-------------- UPDATING ENV FILE ---------------\n')
+
   resetProcessEnv()
-  const databaseUrl = process.env.DATABASE_URL ?? defaultPgURL
-  const jwtSecretKey = process.env.JWT_SECRET_KEY ?? randomBytes(64).toString('base64url')
-  const apiToken = process.env.UPDATER_HTTP_API_TOKEN ?? randomBytes(32).toString('hex')
 
-  const envFile = envPath
+  const databaseUrl = process.env.DATABASE_URL || ''
+  const jwtSecretKey =
+    process.env.JWT_SECRET_KEY ||
+    randomBytes(64).toString('base64url')
 
-  const devWarning = dev
-    ? `
-# # # # # # # # # # # # # # # # # # # # # # # # # # # #
-#       FAKE ENVIRONMENT VARIABLES FOR TESTING        #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # #
-`
-    : ''
+  const apiToken =
+    process.env.UPDATER_HTTP_API_TOKEN ||
+    randomBytes(32).toString('hex')
 
   const newEnv = `${defaultEnvHeader}
 ${devWarning}
-# EML AdminTool configuration
+
 IS_CONFIGURED="true"
 DATABASE_URL="${databaseUrl}"
 JWT_SECRET_KEY="${jwtSecretKey}"
@@ -232,17 +334,20 @@ BODY_SIZE_LIMIT=Infinity
 `
 
   try {
-    if (!fs.existsSync(envPath)) fs.mkdirSync(envPath)
-  } catch (err) {
-    console.error('Error creating env directory:', err)
-    throw new ServerError('Failed to create env directory', err, NotificationCode.FILE_SYSTEM_ERROR, 500)
-  }
+    if (!fs.existsSync('./env')) {
+      fs.mkdirSync('./env')
+    }
 
-  try {
-    fs.writeFileSync(envFile, newEnv)
+    fs.writeFileSync(envPath, newEnv)
   } catch (err) {
-    console.error('Error writing to env file:', err)
-    throw new ServerError('Failed to write to env file', err, NotificationCode.FILE_SYSTEM_ERROR, 500)
+    console.error('Error writing env file:', err)
+
+    throw new ServerError(
+      'Failed to write env file',
+      err,
+      NotificationCode.FILE_SYSTEM_ERROR,
+      500
+    )
   }
 
   resetProcessEnv()
@@ -254,8 +359,14 @@ export function resetProcessEnv(): void {
   if (process.env.IS_CONFIGURED) delete process.env.IS_CONFIGURED
   if (process.env.DATABASE_URL) delete process.env.DATABASE_URL
   if (process.env.JWT_SECRET_KEY) delete process.env.JWT_SECRET_KEY
-  if (process.env.UPDATER_HTTP_API_TOKEN) delete process.env.UPDATER_HTTP_API_TOKEN
-  config({ path: envPath, quiet: true })
+  if (process.env.UPDATER_HTTP_API_TOKEN) {
+    delete process.env.UPDATER_HTTP_API_TOKEN
+  }
+
+  config({
+    path: envPath,
+    quiet: true
+  })
 }
 
 export async function restartUpdater(): Promise<void> {
@@ -272,12 +383,17 @@ export async function restartUpdater(): Promise<void> {
     const data = await response.json()
 
     if (!response.ok || !data.success) {
-      console.error('Error from Updater:', data.error)
-      throw new ServerError('Failed to reload Updater configuration', new Error(data.error), NotificationCode.INTERNAL_SERVER_ERROR, 500)
+      throw new Error(data.error)
     }
   } catch (err) {
-    console.error('Network or execution error while contacting Updater:', err)
-    throw new ServerError('Failed to contact Updater', err, NotificationCode.INTERNAL_SERVER_ERROR, 500)
+    console.error('Updater reload error:', err)
+
+    throw new ServerError(
+      'Failed to contact Updater',
+      err,
+      NotificationCode.INTERNAL_SERVER_ERROR,
+      500
+    )
   }
 
   console.log('Updater configuration reloaded successfully.')
@@ -285,44 +401,8 @@ export async function restartUpdater(): Promise<void> {
 
 export async function restartServer(): Promise<void> {
   console.log('Restarting server...')
+
   setTimeout(() => {
     process.exit(0)
   }, 1000)
-}
-
-function updateEnv(dbPassword: string): void {
-  resetProcessEnv()
-  const isConfigured = process.env.IS_CONFIGURED === 'true'
-
-  const envFile = envPath
-
-  const newDatabaseUrl = process.env.DATABASE_URL || ''
-  const newJwtSecretKey = randomBytes(64).toString('base64url')
-  const newApiToken = randomBytes(32).toString('hex')
-
-  const newEnv = `${defaultEnvHeader}
-${devWarning}
-# EML AdminTool configuration
-IS_CONFIGURED="${isConfigured}"
-DATABASE_URL="${newDatabaseUrl}"
-JWT_SECRET_KEY="${newJwtSecretKey}"
-UPDATER_HTTP_API_TOKEN="${newApiToken}"
-BODY_SIZE_LIMIT=Infinity
-`
-
-  try {
-    if (!fs.existsSync(envPath)) fs.mkdirSync(envPath)
-  } catch (err) {
-    console.error('Error creating env directory:', err)
-    throw new ServerError('Failed to create env directory', err, NotificationCode.FILE_SYSTEM_ERROR, 500)
-  }
-
-  try {
-    fs.writeFileSync(envFile, newEnv)
-  } catch (err) {
-    console.error('Error writing to env file:', err)
-    throw new ServerError('Failed to write to env file', err, NotificationCode.FILE_SYSTEM_ERROR, 500)
-  }
-
-  resetProcessEnv()
 }
