@@ -1,45 +1,25 @@
 import { Client } from 'pg'
 import { exec } from 'child_process'
 import { promisify } from 'util'
-import { config } from 'dotenv'
 import { ServerError } from '$lib/utils/errors'
-import { randomBytes } from 'crypto'
-import fs from 'fs'
 import bcrypt from 'bcrypt'
 import { NotificationCode } from '$lib/utils/notifications'
-import { dev } from '$app/environment'
 import { generateRandomPin } from './pin'
 import path from 'path'
 
 const execAsync = promisify(exec)
 
 export const envPath: string = path.resolve(process.cwd(), 'env', '.env')
+
 export const defaultPgURL: string = process.env.DATABASE_URL ?? ''
 
-export const defaultEnvHeader: string = `# # # # # # # # # # # # # # # # # # # # # # # # # # # #
-#          DO NOT MODIFY OR DELETE THIS FILE          #
-#                                                     #
-# This file contains important environment variables  #
-# for your application, including the password for    #
-# your database and a JWT key. Modifying or deleting  #
-# this file would break your application and          #
-# compromise its security.                            #
-#                                                     #
-# If you need to change any of these values, please   #
-# use the appropriate configuration options rather    #
-# than modifying this file directly.                  #
-# Consult the documentation for more information.     #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # #`
+export const defaultEnvHeader: string = ''
 
-export const devWarning: string = dev
-  ? `
-# # # # # # # # # # # # # # # # # # # # # # # # # # # #
-#       FAKE ENVIRONMENT VARIABLES FOR TESTING        #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # #
-`
-  : ''
+export const devWarning: string = ''
 
-export async function changeDatabasePassword(newPassword: string): Promise<void> {
+export async function changeDatabasePassword(
+  newPassword: string
+): Promise<void> {
   console.log('\n---------- CHANGING DATABASE PASSWORD ----------\n')
 
   resetProcessEnv()
@@ -53,10 +33,11 @@ export async function changeDatabasePassword(newPassword: string): Promise<void>
   await client.connect()
 
   try {
-    // Railway maneja usuarios/password automáticamente
-    // await client.query(`ALTER USER eml WITH PASSWORD '${newPassword}'`)
+    // Railway maneja usuarios automáticamente
+    // No cambiar password manualmente
   } catch (err) {
     console.error('Error changing database password:', err)
+
     await client.end()
 
     throw new ServerError(
@@ -310,54 +291,12 @@ export async function setDefaultProfile(name: string): Promise<void> {
 }
 
 export async function markAsConfigured(): Promise<void> {
-  console.log('\n-------------- UPDATING ENV FILE ---------------\n')
-
-  resetProcessEnv()
-
-  const databaseUrl = process.env.DATABASE_URL || ''
-  const jwtSecretKey =
-    process.env.JWT_SECRET_KEY ||
-    randomBytes(64).toString('base64url')
-
-  const apiToken =
-    process.env.UPDATER_HTTP_API_TOKEN ||
-    randomBytes(32).toString('hex')
-
-  const newEnv = `${defaultEnvHeader}
-${devWarning}
-
-IS_CONFIGURED="true"
-DATABASE_URL="${databaseUrl}"
-JWT_SECRET_KEY="${jwtSecretKey}"
-UPDATER_HTTP_API_TOKEN="${apiToken}"
-BODY_SIZE_LIMIT=Infinity
-`
-
-  try {
-    if (!fs.existsSync('./env')) {
-      fs.mkdirSync('./env')
-    }
-
-    fs.writeFileSync(envPath, newEnv)
-  } catch (err) {
-    console.error('Error writing env file:', err)
-
-    throw new ServerError(
-      'Failed to write env file',
-      err,
-      NotificationCode.FILE_SYSTEM_ERROR,
-      500
-    )
-  }
-
-  resetProcessEnv()
-
-  console.log('Environment file updated successfully.')
+  console.log('\n----------- CONFIGURATION COMPLETED ------------\n')
+  return
 }
 
 export function resetProcessEnv(): void {
-  // Railway ya inyecta las variables automáticamente
-  // No cargar env/.env
+  // Railway ya inyecta variables automáticamente
 }
 
 export async function restartUpdater(): Promise<void> {
@@ -367,5 +306,9 @@ export async function restartUpdater(): Promise<void> {
 
 export async function restartServer(): Promise<void> {
   console.log('Restarting server...')
+  return
+}
+
+function updateEnv(): void {
   return
 }
