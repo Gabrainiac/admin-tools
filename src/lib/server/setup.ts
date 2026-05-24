@@ -367,8 +367,5 @@ export async function restartUpdater(): Promise<void> {
 
 export async function restartServer(): Promise<void> {
   console.log('Restarting server...')
-
-  setTimeout(() => {
-    process.exit(0)
-  }, 1000)
+  return
 }
